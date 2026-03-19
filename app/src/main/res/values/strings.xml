@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Night Clock</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Preferences -->
+    <string name="text_color_title">Color</string>
+    <string name="burn_in_title">Burn-In protection</string>
+    <string name="night_mode_brightness_title">Night Mode Brightness</string>
+
+</resources>
