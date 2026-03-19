@@ -12,6 +12,12 @@ A fullscreen, minimalist bedside clock for Android — designed for nighttime us
 - **Always-On Display** — Screen stays on and the clock shows on the lock screen.
 - **Auto-Hiding System UI** — Tap to reveal system bars; they auto-hide after 2 seconds.
 
+## Usage
+
+- **Open Settings** — Tap the screen once to reveal the gear icon in the top-right corner, then tap the gear icon.
+- **Toggle Day/Night Mode** — Tap the screen once (gear icon appears), then long-press anywhere on the screen. A toast notification confirms the mode switch.
+- **Upcoming Alarm** — The text at the top of the screen automatically displays the time of the next scheduled alarm or alert, if any.
+
 ## Screenshots
 
 <p align="center">
