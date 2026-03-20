@@ -3,7 +3,6 @@ package com.ssxxaazz.nightclock
 import android.app.NotificationManager
 import android.content.Context
 import android.widget.Toast
-import androidx.preference.PreferenceManager
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import org.junit.Before
@@ -44,7 +43,7 @@ class FullscreenActivityTest {
 
     @Test
     fun longPress_togglesLowBrightness() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putInt("night_mode_brightness", 100).apply()
 
         assert(!activity.lowBrightness)
@@ -58,7 +57,7 @@ class FullscreenActivityTest {
 
     @Test
     fun longPress_showsNightModeToast_whenEnteringNightMode() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putInt("night_mode_brightness", 100).apply()
 
         ShadowToast.reset()
@@ -73,7 +72,7 @@ class FullscreenActivityTest {
 
     @Test
     fun longPress_showsDayModeToast_whenExitingNightMode() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putInt("night_mode_brightness", 100).apply()
 
         // Enter night mode first
@@ -92,7 +91,7 @@ class FullscreenActivityTest {
 
     @Test
     fun longPress_enablesDoNotDisturb_whenEnteringNightMode() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putInt("night_mode_brightness", 100).apply()
 
         val notificationManager = activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -110,7 +109,7 @@ class FullscreenActivityTest {
 
     @Test
     fun longPress_disablesDoNotDisturb_whenExitingNightMode() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putInt("night_mode_brightness", 100).apply()
 
         val notificationManager = activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -132,7 +131,7 @@ class FullscreenActivityTest {
 
     @Test
     fun longPress_doesNotDisableDoNotDisturb_ifItWasAlreadyEnabled_beforeNightMode() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putInt("night_mode_brightness", 100).apply()
 
         val notificationManager = activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -154,7 +153,7 @@ class FullscreenActivityTest {
 
     @Test
     fun longPress_doesNotDisableDoNotDisturb_ifItWasTotalDnd_beforeNightMode() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putInt("night_mode_brightness", 100).apply()
 
         val notificationManager = activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -181,7 +180,7 @@ class FullscreenActivityTest {
 
         scenario.onActivity { act ->
             scopedActivity = act
-            val prefs = PreferenceManager.getDefaultSharedPreferences(act)
+            val prefs = act.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
             prefs.edit().putInt("night_mode_brightness", 100).apply()
 
             val notificationManager = act.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -216,7 +215,7 @@ class FullscreenActivityTest {
 
         scenario.onActivity { act ->
             scopedActivity = act
-            val prefs = PreferenceManager.getDefaultSharedPreferences(act)
+            val prefs = act.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
             prefs.edit().putInt("night_mode_brightness", 100).apply()
 
             val notificationManager = act.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

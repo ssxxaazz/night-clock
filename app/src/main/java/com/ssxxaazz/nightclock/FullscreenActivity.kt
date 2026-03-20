@@ -6,20 +6,19 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import com.ssxxaazz.nightclock.ui.screen.FullscreenClock
 import com.ssxxaazz.nightclock.ui.theme.NightClockTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class FullscreenActivity : AppCompatActivity() {
+class FullscreenActivity : ComponentActivity() {
 
     var lowBrightness = false
         private set
@@ -65,7 +64,7 @@ class FullscreenActivity : AppCompatActivity() {
     private fun applyCustomBrightness() {
         val layout = window.attributes
         if (lowBrightness) {
-            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+            val sharedPreferences = getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
             layout.screenBrightness = sharedPreferences.getInt("night_mode_brightness", 0) / 500f
 
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager

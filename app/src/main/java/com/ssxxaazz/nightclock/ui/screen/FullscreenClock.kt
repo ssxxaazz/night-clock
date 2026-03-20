@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,6 +45,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.font.FontFamily
@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.preference.PreferenceManager
+import com.ssxxaazz.nightclock.R
 import com.ssxxaazz.nightclock.SettingsActivity
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -83,7 +83,7 @@ fun FullscreenClock(
     var alarmText by rememberSaveable { mutableStateOf<String?>(null) }
 
     var textColor by remember { mutableStateOf(SwatchColors.Green) }
-    val sharedPreferences = remember { PreferenceManager.getDefaultSharedPreferences(context) }
+    val sharedPreferences = remember { context.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE) }
     var burnInProtectionEnabled by remember { mutableStateOf(sharedPreferences.getBoolean("burn_in", false)) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "burn_in")
@@ -231,7 +231,7 @@ fun FullscreenClock(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.Alarm,
+                    painter = painterResource(R.drawable.ic_alarm),
                     contentDescription = "Alarm",
                     tint = actualTextColor,
                     modifier = Modifier.size((screenWidth * 0.06f).dp)

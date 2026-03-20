@@ -1,5 +1,6 @@
 package com.ssxxaazz.nightclock.ui.screen
 
+import android.content.Context
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,9 +18,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BrightnessMedium
-import androidx.compose.material.icons.filled.ColorLens
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,9 +42,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.preference.PreferenceManager
 import com.ssxxaazz.nightclock.R
 
 private val Green = SwatchColors.Green
@@ -61,7 +59,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val sharedPreferences = remember { PreferenceManager.getDefaultSharedPreferences(context) }
+    val sharedPreferences = remember { context.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE) }
 
     val colorEntries = listOf("Green", "Red", "Yellow", "Blue")
     val colorValues = listOf("#2AB32F", "#CC0E00", "#D7C631", "#0000FF")
@@ -164,7 +162,7 @@ private fun ColorSelectionSetting(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.ColorLens,
+                painter = painterResource(R.drawable.ic_color_lens),
                 contentDescription = null,
                 tint = White
             )
@@ -243,7 +241,7 @@ private fun SwitchSetting(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Default.Security,
+            painter = painterResource(R.drawable.ic_security),
             contentDescription = null,
             tint = White
         )
@@ -278,7 +276,7 @@ private fun BrightnessSetting(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.BrightnessMedium,
+                painter = painterResource(R.drawable.ic_brightness_medium),
                 contentDescription = null,
                 tint = White
             )
