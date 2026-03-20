@@ -39,6 +39,24 @@ class FullscreenActivity : AppCompatActivity() {
         applyCustomBrightness()
     }
 
+    override fun onPause() {
+        super.onPause()
+        if (lowBrightness) {
+            lowBrightness = false
+            val layout = window.attributes
+            layout.screenBrightness = -1f
+            window.attributes = layout
+
+            if (wasInNightMode && !dndWasEnabledBeforeNightMode) {
+                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                if (notificationManager.isNotificationPolicyAccessGranted) {
+                    notificationManager.setInterruptionFilter(android.app.NotificationManager.INTERRUPTION_FILTER_ALL)
+                }
+            }
+            wasInNightMode = false
+        }
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         setupWindowFlags()
