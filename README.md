@@ -22,6 +22,7 @@ A fullscreen, minimalist bedside clock for Android — designed for nighttime us
 
 <p align="center">
   <img src="screenshot.jpg" alt="Night Clock" height="800">
+  <img src="screenshot-settings.jpg" alt="Settings" height="800">
 </p>
 
 ## Requirements
