@@ -1,6 +1,5 @@
 package com.ssxxaazz.nightclock.ui.screen
 
-import android.app.AlarmManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
@@ -54,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.ssxxaazz.nightclock.AlarmFilter
 import com.ssxxaazz.nightclock.R
 import com.ssxxaazz.nightclock.SettingsActivity
 import kotlinx.coroutines.delay
@@ -81,6 +81,7 @@ fun FullscreenClock(
     var minutes by rememberSaveable { mutableStateOf("00") }
     var dateText by rememberSaveable { mutableStateOf("") }
     var alarmText by rememberSaveable { mutableStateOf<String?>(null) }
+    var isCalendarAlert by rememberSaveable { mutableStateOf(false) }
 
     var textColor by remember { mutableStateOf(SwatchColors.Green) }
     val sharedPreferences = remember { context.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE) }
@@ -150,17 +151,19 @@ fun FullscreenClock(
             val sdf = SimpleDateFormat("EEEE, d MMMM", Locale.US)
             dateText = sdf.format(cal.time)
 
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val alarmClockInfo = alarmManager.nextAlarmClock
-            if (alarmClockInfo != null) {
+            val alarmInfo = AlarmFilter.getNextAlarm(context)
+            if (alarmInfo != null) {
+                val isClockAlarm = AlarmFilter.isClockAlarm(alarmInfo)
                 val alarmCal = Calendar.getInstance().apply {
-                    timeInMillis = alarmClockInfo.triggerTime
+                    timeInMillis = alarmInfo.triggerTime
                 }
                 val daySdf = SimpleDateFormat("EEEE", Locale.US)
                 val dayText = daySdf.format(alarmCal.time)
                 alarmText = "$dayText ${String.format(Locale.US, "%02d:%02d", alarmCal.get(Calendar.HOUR_OF_DAY), alarmCal.get(Calendar.MINUTE))}"
+                isCalendarAlert = !isClockAlarm
             } else {
                 alarmText = null
+                isCalendarAlert = false
             }
 
             textColor = try {
@@ -231,8 +234,8 @@ fun FullscreenClock(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_alarm),
-                    contentDescription = "Alarm",
+                    painter = painterResource(if (isCalendarAlert) R.drawable.ic_calendar else R.drawable.ic_alarm),
+                    contentDescription = if (isCalendarAlert) "Calendar Alert" else "Alarm",
                     tint = actualTextColor,
                     modifier = Modifier.size((screenWidth * 0.06f).dp)
                 )
