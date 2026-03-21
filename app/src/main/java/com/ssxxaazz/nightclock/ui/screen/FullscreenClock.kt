@@ -340,14 +340,11 @@ private fun SecondsLine(
         }
     }
 
-    Box(
-        modifier = modifier
-            .background(color.copy(alpha = 0.3f))
-    ) {
+    Box(modifier = modifier) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(secondsProgress)
-                .height(3.dp)
+                .height(4.dp)
                 .background(color)
         )
     }
