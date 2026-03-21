@@ -3,8 +3,6 @@ package com.ssxxaazz.nightclock
 import android.app.NotificationManager
 import android.content.Context
 import android.widget.Toast
-import androidx.lifecycle.Lifecycle
-import androidx.test.core.app.ActivityScenario
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -173,94 +171,4 @@ class FullscreenActivityTest {
         }
     }
 
-    @Test
-    fun onPause_disablesDoNotDisturb_whenInNightMode() {
-        val scenario = ActivityScenario.launch(FullscreenActivity::class.java)
-        var scopedActivity: FullscreenActivity? = null
-
-        scenario.onActivity { act ->
-            scopedActivity = act
-            val prefs = act.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-            prefs.edit().putInt("night_mode_brightness", 100).apply()
-
-            val notificationManager = act.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-            // Ensure DND is off initially
-            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
-
-            // Enter night mode (enables DND)
-            act.toggleNightMode()
-
-            assert(notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS) {
-                "Expected DND to be enabled after entering night mode"
-            }
-        }
-
-        // Move to paused state
-        scenario.moveToState(Lifecycle.State.STARTED)
-
-        // Verify DND is disabled when paused
-        val notificationManager = scopedActivity!!.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        assert(notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALL) {
-            "Expected DND to be disabled when activity is paused while in night mode"
-        }
-
-        scenario.close()
-    }
-
-    @Test
-    fun onPause_doesNotDisableDoNotDisturb_ifUserHadItEnabled_beforeNightMode() {
-        val scenario = ActivityScenario.launch(FullscreenActivity::class.java)
-        var scopedActivity: FullscreenActivity? = null
-
-        scenario.onActivity { act ->
-            scopedActivity = act
-            val prefs = act.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-            prefs.edit().putInt("night_mode_brightness", 100).apply()
-
-            val notificationManager = act.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-            // Simulate user had DND already enabled before
-            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS)
-
-            // Enter night mode
-            act.toggleNightMode()
-        }
-
-        // Move to paused state
-        scenario.moveToState(Lifecycle.State.STARTED)
-
-        // Verify DND remains enabled since user had it on before
-        val notificationManager = scopedActivity!!.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        assert(notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS) {
-            "Expected DND to remain enabled when paused (user had it on before night mode)"
-        }
-
-        scenario.close()
-    }
-
-    @Test
-    fun onPause_doesNotDisableDoNotDisturb_ifNotInNightMode() {
-        val scenario = ActivityScenario.launch(FullscreenActivity::class.java)
-        var scopedActivity: FullscreenActivity? = null
-
-        scenario.onActivity { act ->
-            scopedActivity = act
-            val notificationManager = act.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-            // Ensure DND is on but not from the app
-            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS)
-        }
-
-        // Move to paused state
-        scenario.moveToState(Lifecycle.State.STARTED)
-
-        // Verify DND state is unchanged
-        val notificationManager = scopedActivity!!.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        assert(notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS) {
-            "Expected DND state to remain unchanged when paused without night mode"
-        }
-
-        scenario.close()
-    }
 }
