@@ -171,4 +171,31 @@ class FullscreenActivityTest {
         }
     }
 
+    @Test
+    fun onStop_finishesActivity_whenGoingToBackground() {
+        val activityController = Robolectric.buildActivity(FullscreenActivity::class.java)
+            .create()
+            .resume()
+        val runningActivity = activityController.get()
+
+        assert(!runningActivity.isFinishing) { "Activity should be running" }
+
+        activityController.stop()
+
+        assert(runningActivity.isFinishing) { "Activity should finish when going to background" }
+    }
+
+    @Test
+    fun onStop_doesNotFinishActivity_whenCoveredBySettings() {
+        val activityController = Robolectric.buildActivity(FullscreenActivity::class.java)
+            .create()
+            .resume()
+        val runningActivity = activityController.get()
+
+        runningActivity.isCoveredByOtherActivity = true
+        activityController.stop()
+
+        assert(!runningActivity.isFinishing) { "Activity should not finish when covered by another activity" }
+    }
+
 }

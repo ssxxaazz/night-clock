@@ -24,6 +24,8 @@ class FullscreenActivity : ComponentActivity() {
         private set
     private var dndWasEnabledBeforeNightMode = false
     private var wasInNightMode = false
+    @Suppress("VisibilityProperty")
+    internal var isCoveredByOtherActivity = false
 
     private val systemUiVisibleForClock = mutableStateOf(false)
 
@@ -54,6 +56,14 @@ class FullscreenActivity : ComponentActivity() {
             }
             wasInNightMode = false
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isCoveredByOtherActivity) {
+            finish()
+        }
+        isCoveredByOtherActivity = false
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -107,6 +117,7 @@ class FullscreenActivity : ComponentActivity() {
                 FullscreenClock(
                     systemUiVisible = systemUiVisibleForClock,
                     onSettingsClick = {
+                        isCoveredByOtherActivity = true
                         val myIntent = Intent(this, SettingsActivity::class.java)
                         startActivity(myIntent)
                     },
