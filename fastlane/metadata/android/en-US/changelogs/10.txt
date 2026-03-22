@@ -1,0 +1,9 @@
+Initial F-Droid release.
+
+Features:
+- Fullscreen bedside clock with vertical time display
+- Night mode with automatic Do Not Disturb
+- Four preset colors (Green, Red, Yellow, Blue)
+- AMOLED burn-in protection mode
+- Adjustable night mode brightness
+- Settings for colors and burn-in protection

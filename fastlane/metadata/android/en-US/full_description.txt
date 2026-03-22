@@ -1,0 +1,17 @@
+A fullscreen, minimalist bedside clock for Android — designed for nighttime use with AMOLED-friendly burn-in protection, configurable colors, and automatic Do Not Disturb integration.
+
+**Features:**
+- Large, rotated time display (view vertically when phone is on its side)
+- Night Mode: reduces brightness and enables Do Not Disturb (alarms only)
+- Configurable colors: Green, Red, Yellow, or Blue
+- AMOLED burn-in protection with oscillating text/background
+- Adjustable night mode brightness (0-100%)
+- Always-on display
+- Auto-hiding system UI
+
+**Usage:**
+- Tap screen once to reveal settings icon (top-right)
+- Long-press to toggle day/night mode
+- Upcoming alarm time displayed at top of screen
+
+Requires Android 15+ (API level 35).
