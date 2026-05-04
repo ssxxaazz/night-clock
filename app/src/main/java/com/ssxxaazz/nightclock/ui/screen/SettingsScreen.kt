@@ -1,6 +1,8 @@
 package com.ssxxaazz.nightclock.ui.screen
 
 import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -78,6 +80,15 @@ fun SettingsScreen(
         mutableFloatStateOf(sharedPreferences.getInt("night_mode_brightness", 0).toFloat())
     }
 
+    var autoBrightnessEnabled by remember {
+        mutableStateOf(sharedPreferences.getBoolean("auto_brightness", false))
+    }
+
+    val hasLightSensor = remember {
+        val sm = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        sm.getDefaultSensor(Sensor.TYPE_LIGHT) != null
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -138,6 +149,7 @@ fun SettingsScreen(
             BrightnessSetting(
                 title = stringResource(R.string.night_mode_brightness_title),
                 value = brightness,
+                enabled = !autoBrightnessEnabled,
                 onValueChange = {
                     brightness = it
                     sharedPreferences.edit()
@@ -145,6 +157,22 @@ fun SettingsScreen(
                         .apply()
                 }
             )
+
+            if (hasLightSensor) {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                SwitchSetting(
+                    title = stringResource(R.string.auto_brightness_title),
+                    checked = autoBrightnessEnabled,
+                    onCheckedChange = {
+                        autoBrightnessEnabled = it
+                        sharedPreferences.edit()
+                            .putBoolean("auto_brightness", it)
+                            .apply()
+                    },
+                    iconRes = R.drawable.ic_brightness_medium
+                )
+            }
         }
     }
 }
@@ -231,7 +259,8 @@ private fun ColorCircle(
 private fun SwitchSetting(
     title: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    iconRes: Int = R.drawable.ic_security
 ) {
     Row(
         modifier = Modifier
@@ -241,7 +270,7 @@ private fun SwitchSetting(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            painter = painterResource(R.drawable.ic_security),
+            painter = painterResource(iconRes),
             contentDescription = null,
             tint = White
         )
@@ -269,8 +298,11 @@ private fun SwitchSetting(
 private fun BrightnessSetting(
     title: String,
     value: Float,
+    enabled: Boolean = true,
     onValueChange: (Float) -> Unit
 ) {
+    val textAlpha = if (enabled) 1f else 0.4f
+
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -278,13 +310,13 @@ private fun BrightnessSetting(
             Icon(
                 painter = painterResource(R.drawable.ic_brightness_medium),
                 contentDescription = null,
-                tint = White
+                tint = White.copy(alpha = textAlpha)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = White
+                color = White.copy(alpha = textAlpha)
             )
         }
 
@@ -296,20 +328,24 @@ private fun BrightnessSetting(
         ) {
             Slider(
                 value = value,
-                onValueChange = onValueChange,
+                onValueChange = if (enabled) onValueChange else { _ -> },
                 valueRange = 0f..100f,
                 modifier = Modifier.weight(1f),
+                enabled = enabled,
                 colors = SliderDefaults.colors(
                     thumbColor = Green,
                     activeTrackColor = Green,
-                    inactiveTrackColor = Color.DarkGray
+                    inactiveTrackColor = Color.DarkGray,
+                    disabledThumbColor = Color.Gray,
+                    disabledActiveTrackColor = Color.Gray.copy(alpha = 0.5f),
+                    disabledInactiveTrackColor = Color.DarkGray.copy(alpha = 0.3f)
                 )
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "${value.toInt()}%",
                 style = MaterialTheme.typography.bodyMedium,
-                color = White
+                color = White.copy(alpha = textAlpha)
             )
         }
     }

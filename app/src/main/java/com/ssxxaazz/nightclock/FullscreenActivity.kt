@@ -3,6 +3,10 @@ package com.ssxxaazz.nightclock
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
@@ -27,6 +31,11 @@ class FullscreenActivity : ComponentActivity() {
     @Suppress("VisibilityProperty")
     internal var isCoveredByOtherActivity = false
 
+    private val sensorManager: SensorManager by lazy {
+        getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    }
+    private var lightSensorListener: SensorEventListener? = null
+
     private val systemUiVisibleForClock = mutableStateOf(false)
 
     fun toggleNightMode() {
@@ -42,6 +51,7 @@ class FullscreenActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+        stopLightSensor()
         if (lowBrightness) {
             lowBrightness = false
             val layout = window.attributes
@@ -72,10 +82,18 @@ class FullscreenActivity : ComponentActivity() {
     }
 
     private fun applyCustomBrightness() {
+        val sharedPreferences = getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         val layout = window.attributes
         if (lowBrightness) {
-            val sharedPreferences = getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-            layout.screenBrightness = sharedPreferences.getInt("night_mode_brightness", 0) / 500f
+            val autoBrightnessEnabled = sharedPreferences.getBoolean("auto_brightness", false)
+
+            if (autoBrightnessEnabled && hasLightSensor()) {
+                layout.screenBrightness = DEFAULT_AUTO_FACTOR * MAX_AUTO_BRIGHTNESS
+                startLightSensor()
+            } else {
+                stopLightSensor()
+                layout.screenBrightness = computeBaseBrightness(sharedPreferences)
+            }
 
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
             if (!notificationManager.isNotificationPolicyAccessGranted) {
@@ -91,6 +109,7 @@ class FullscreenActivity : ComponentActivity() {
             wasInNightMode = true
             android.widget.Toast.makeText(applicationContext, "Night Mode", android.widget.Toast.LENGTH_SHORT).show()
         } else {
+            stopLightSensor()
             layout.screenBrightness = -1f
 
             if (wasInNightMode) {
@@ -105,6 +124,66 @@ class FullscreenActivity : ComponentActivity() {
             }
         }
         window.attributes = layout
+    }
+
+    private fun computeBaseBrightness(prefs: android.content.SharedPreferences): Float {
+        return prefs.getInt("night_mode_brightness", 0) / 500f
+    }
+
+    private fun hasLightSensor(): Boolean {
+        return sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT) != null
+    }
+
+    private fun startLightSensor() {
+        val lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT) ?: return
+        if (lightSensorListener != null) return
+
+        lightSensorListener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent?) {
+                event ?: return
+                val lux = event.values[0]
+                val autoFactor = computeAutoFactor(lux)
+                runOnUiThread {
+                    val layout = window.attributes
+                    layout.screenBrightness = autoFactor * MAX_AUTO_BRIGHTNESS
+                    window.attributes = layout
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+        }
+
+        sensorManager.registerListener(
+            lightSensorListener,
+            lightSensor,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+    }
+
+    private fun stopLightSensor() {
+        lightSensorListener?.let { listener ->
+            sensorManager.unregisterListener(listener)
+        }
+        lightSensorListener = null
+    }
+
+    companion object {
+        /** Initial auto factor applied before the first sensor reading arrives (mid-range). */
+        private const val DEFAULT_AUTO_FACTOR = 0.5f
+
+        /** Maximum screen brightness when auto-brightness is at 100% (100/500 = 0.2). */
+        private const val MAX_AUTO_BRIGHTNESS = 0.2f
+
+        /** Map ambient lux to a brightness scale factor in [0.0, 1.0].
+         *  0 lux → 0% equivalent, 200 lux → 100% equivalent.
+         *  Uses a natural-log mapping clamped at 200 lux.
+         *  Negative lux values are treated as 0 to prevent NaN. */
+        fun computeAutoFactor(lux: Float): Float {
+            val safeLux = lux.coerceAtLeast(0f)
+            return (kotlin.math.ln((safeLux + 1f).toDouble()) / kotlin.math.ln(201.0))
+                .toFloat()
+                .coerceIn(0f, 1f)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

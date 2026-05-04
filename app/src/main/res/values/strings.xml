@@ -6,5 +6,6 @@
     <string name="text_color_title">Color</string>
     <string name="burn_in_title">Burn-In protection</string>
     <string name="night_mode_brightness_title">Night Mode Brightness</string>
+    <string name="auto_brightness_title">Auto-brightness</string>
 
 </resources>

@@ -2,6 +2,8 @@ package com.ssxxaazz.nightclock
 
 import android.app.NotificationManager
 import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.widget.Toast
 import org.junit.Before
 import org.junit.Test
@@ -10,7 +12,10 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.SensorEventBuilder
 import org.robolectric.shadows.ShadowNotificationManager
+import org.robolectric.shadows.ShadowSensor
+import org.robolectric.shadows.ShadowSensorManager
 import org.robolectric.shadows.ShadowToast
 import org.robolectric.Shadows
 
@@ -196,6 +201,192 @@ class FullscreenActivityTest {
         activityController.stop()
 
         assert(!runningActivity.isFinishing) { "Activity should not finish when covered by another activity" }
+    }
+
+    // --- Auto-brightness tests ---
+
+    @Test
+    fun computeAutoFactor_handlesNegativeLux_asZero() {
+        val factor = FullscreenActivity.computeAutoFactor(-5f)
+        assert(factor == 0f) { "Expected 0 for negative lux but was $factor" }
+    }
+
+    @Test
+    fun computeAutoFactor_clampsLargeLux_toOne() {
+        val factor = FullscreenActivity.computeAutoFactor(100000f)
+        assert(factor == 1f) { "Expected 1 for very large lux but was $factor" }
+    }
+
+    @Test
+    fun computeAutoFactor_zeroLux_returnsZero() {
+        val factor = FullscreenActivity.computeAutoFactor(0f)
+        assert(factor == 0f) { "Expected 0 for zero lux but was $factor" }
+    }
+
+    @Test
+    fun computeAutoFactor_twoHundredLux_returnsOne() {
+        val factor = FullscreenActivity.computeAutoFactor(200f)
+        assert(factor == 1f) { "Expected 1 for 200 lux but was $factor" }
+    }
+
+    @Test
+    fun autoBrightness_doesNotRegisterListener_whenPrefIsFalse() {
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("auto_brightness", false).commit()
+        prefs.edit().putInt("night_mode_brightness", 50).commit()
+
+        val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
+        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        shadowManager.addSensor(lightSensor)
+
+        activity.toggleNightMode()
+
+        assert(shadowManager.getListeners().isEmpty()) {
+            "Expected no sensor listeners when auto-brightness is disabled"
+        }
+    }
+
+    @Test
+    fun autoBrightness_registersListener_whenEnabledAndNightModeOn() {
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("auto_brightness", true).commit()
+        prefs.edit().putInt("night_mode_brightness", 50).commit()
+
+        val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
+        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        shadowManager.addSensor(lightSensor)
+
+        activity.toggleNightMode()
+
+        assert(shadowManager.getListeners().isNotEmpty()) {
+            "Expected sensor listener to be registered when auto-brightness is enabled and night mode is on"
+        }
+    }
+
+    @Test
+    fun autoBrightness_unregistersListener_whenNightModeExits() {
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("auto_brightness", true).commit()
+        prefs.edit().putInt("night_mode_brightness", 50).commit()
+
+        val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
+        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        shadowManager.addSensor(lightSensor)
+
+        activity.toggleNightMode()
+        assert(shadowManager.getListeners().isNotEmpty()) {
+            "Expected listener to be registered after entering night mode"
+        }
+
+        activity.toggleNightMode()
+        assert(shadowManager.getListeners().isEmpty()) {
+            "Expected sensor listener to be unregistered when night mode is exited"
+        }
+    }
+
+    @Test
+    fun autoBrightness_ignoresManualSetting_whenAutoIsOn() {
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("auto_brightness", true).commit()
+        prefs.edit().putInt("night_mode_brightness", 30).commit()
+
+        val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
+        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        shadowManager.addSensor(lightSensor)
+
+        activity.toggleNightMode()
+
+        val event = SensorEventBuilder.newBuilder()
+            .setSensor(lightSensor)
+            .setValues(floatArrayOf(200f))
+            .build()
+        shadowManager.sendSensorEventToListeners(event, lightSensor)
+
+        // 200 lux → 100% equivalent (0.2), manual setting of 30% must be ignored
+        val brightness = activity.window.attributes.screenBrightness
+        assert(brightness == 0.2f) {
+            "Expected brightness 0.2 (100% equivalent) ignoring manual 30% setting. Got $brightness"
+        }
+    }
+
+    @Test
+    fun autoBrightness_scalesBrightnessBasedOnLux() {
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("auto_brightness", true).commit()
+        prefs.edit().putInt("night_mode_brightness", 50).commit()
+
+        val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
+        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        shadowManager.addSensor(lightSensor)
+
+        activity.toggleNightMode()
+
+        // 0 lux → 0% equivalent → brightness 0
+        val event0Lux = SensorEventBuilder.newBuilder()
+            .setSensor(lightSensor)
+            .setValues(floatArrayOf(0f))
+            .build()
+        shadowManager.sendSensorEventToListeners(event0Lux, lightSensor)
+        val after0Lux = activity.window.attributes.screenBrightness
+        assert(after0Lux == 0f) {
+            "Expected brightness 0 at 0 lux (0% manual equivalent) but was $after0Lux"
+        }
+
+        // 10 lux: ln(11)/ln(201) ≈ 0.452 → brightness = 0.452 × 0.2 ≈ 0.0904
+        val event10Lux = SensorEventBuilder.newBuilder()
+            .setSensor(lightSensor)
+            .setValues(floatArrayOf(10f))
+            .build()
+        shadowManager.sendSensorEventToListeners(event10Lux, lightSensor)
+        val after10Lux = activity.window.attributes.screenBrightness
+        val expected10Lux = 0.2f * (Math.log(11.0) / Math.log(201.0)).toFloat()
+        assert(Math.abs(after10Lux - expected10Lux) < 0.01f) {
+            "Expected brightness ~$expected10Lux at 10 lux but was $after10Lux"
+        }
+
+        // 200 lux → factor 1.0 → brightness = 0.2 (100% equivalent)
+        val event200Lux = SensorEventBuilder.newBuilder()
+            .setSensor(lightSensor)
+            .setValues(floatArrayOf(200f))
+            .build()
+        shadowManager.sendSensorEventToListeners(event200Lux, lightSensor)
+        val after200Lux = activity.window.attributes.screenBrightness
+        assert(after200Lux == 0.2f) {
+            "Expected brightness 0.2 at 200 lux (100% manual equivalent) but was $after200Lux"
+        }
+    }
+
+    @Test
+    fun autoBrightness_unregistersListener_onPause() {
+        val controller = Robolectric.buildActivity(FullscreenActivity::class.java)
+            .create()
+            .resume()
+        val testActivity = controller.get()
+
+        val prefs = testActivity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("auto_brightness", true).commit()
+        prefs.edit().putInt("night_mode_brightness", 50).commit()
+
+        val sensorManager = testActivity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
+        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        shadowManager.addSensor(lightSensor)
+
+        testActivity.toggleNightMode()
+        assert(shadowManager.getListeners().isNotEmpty()) {
+            "Expected listener to be registered before pause"
+        }
+
+        controller.pause()
+
+        assert(shadowManager.getListeners().isEmpty()) {
+            "Expected sensor listener to be unregistered on pause"
+        }
     }
 
 }
