@@ -1,1 +1,1 @@
-A fullscreen bedside clock with night mode and burn-in protection.
+A fullscreen bedside clock with sleep mode and burn-in protection.

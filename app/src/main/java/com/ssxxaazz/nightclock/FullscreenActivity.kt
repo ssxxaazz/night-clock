@@ -26,8 +26,8 @@ class FullscreenActivity : ComponentActivity() {
 
     var lowBrightness = false
         private set
-    private var dndWasEnabledBeforeNightMode = false
-    private var wasInNightMode = false
+    private var dndWasEnabledBeforeSleepMode = false
+    private var wasInSleepMode = false
     @Suppress("VisibilityProperty")
     internal var isCoveredByOtherActivity = false
 
@@ -38,7 +38,7 @@ class FullscreenActivity : ComponentActivity() {
 
     private val systemUiVisibleForClock = mutableStateOf(false)
 
-    fun toggleNightMode() {
+    fun toggleSleepMode() {
         lowBrightness = !lowBrightness
         applyCustomBrightness()
     }
@@ -58,13 +58,13 @@ class FullscreenActivity : ComponentActivity() {
             layout.screenBrightness = -1f
             window.attributes = layout
 
-            if (wasInNightMode && !dndWasEnabledBeforeNightMode) {
+            if (wasInSleepMode && !dndWasEnabledBeforeSleepMode) {
                 val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                 if (notificationManager.isNotificationPolicyAccessGranted) {
                     notificationManager.setInterruptionFilter(android.app.NotificationManager.INTERRUPTION_FILTER_ALL)
                 }
             }
-            wasInNightMode = false
+            wasInSleepMode = false
         }
     }
 
@@ -100,34 +100,34 @@ class FullscreenActivity : ComponentActivity() {
                 android.widget.Toast.makeText(this, "Enable Do Not Disturb permission in Settings", android.widget.Toast.LENGTH_LONG).show()
                 startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
             } else {
-                dndWasEnabledBeforeNightMode = notificationManager.currentInterruptionFilter != android.app.NotificationManager.INTERRUPTION_FILTER_ALL
-                if (!dndWasEnabledBeforeNightMode) {
+                dndWasEnabledBeforeSleepMode = notificationManager.currentInterruptionFilter != android.app.NotificationManager.INTERRUPTION_FILTER_ALL
+                if (!dndWasEnabledBeforeSleepMode) {
                     notificationManager.setInterruptionFilter(android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS)
                 }
             }
 
-            wasInNightMode = true
-            android.widget.Toast.makeText(applicationContext, "Night Mode", android.widget.Toast.LENGTH_SHORT).show()
+            wasInSleepMode = true
+            android.widget.Toast.makeText(applicationContext, "Sleep Mode", android.widget.Toast.LENGTH_SHORT).show()
         } else {
             stopLightSensor()
             layout.screenBrightness = -1f
 
-            if (wasInNightMode) {
-                if (!dndWasEnabledBeforeNightMode) {
+            if (wasInSleepMode) {
+                if (!dndWasEnabledBeforeSleepMode) {
                     val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                     if (notificationManager.isNotificationPolicyAccessGranted) {
                         notificationManager.setInterruptionFilter(android.app.NotificationManager.INTERRUPTION_FILTER_ALL)
                     }
                 }
                 android.widget.Toast.makeText(applicationContext, "Day Mode", android.widget.Toast.LENGTH_SHORT).show()
-                wasInNightMode = false
+                wasInSleepMode = false
             }
         }
         window.attributes = layout
     }
 
     private fun computeBaseBrightness(prefs: android.content.SharedPreferences): Float {
-        return prefs.getInt("night_mode_brightness", 0) / 500f
+        return prefs.getInt("sleep_mode_brightness", 0) / 500f
     }
 
     private fun hasLightSensor(): Boolean {
@@ -208,7 +208,7 @@ class FullscreenActivity : ComponentActivity() {
                         hideSystemUI()
                     },
                     onLongPress = {
-                        toggleNightMode()
+                        toggleSleepMode()
                     }
                 )
             }

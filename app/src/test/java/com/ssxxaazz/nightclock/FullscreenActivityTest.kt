@@ -47,11 +47,11 @@ class FullscreenActivityTest {
     @Test
     fun longPress_togglesLowBrightness() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("night_mode_brightness", 100).apply()
+        prefs.edit().putInt("sleep_mode_brightness", 100).apply()
 
         assert(!activity.lowBrightness)
 
-        activity.toggleNightMode()
+        activity.toggleSleepMode()
 
         val attrs = activity.window.attributes
         assert(attrs.screenBrightness < 1.0f)
@@ -59,120 +59,120 @@ class FullscreenActivityTest {
     }
 
     @Test
-    fun longPress_showsNightModeToast_whenEnteringNightMode() {
+    fun longPress_showsSleepModeToast_whenEnteringSleepMode() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("night_mode_brightness", 100).apply()
+        prefs.edit().putInt("sleep_mode_brightness", 100).apply()
 
         ShadowToast.reset()
-        activity.toggleNightMode()
+        activity.toggleSleepMode()
 
         val latestToast = ShadowToast.getLatestToast()
         assert(latestToast != null) { "Expected a toast to be shown" }
-        assert(ShadowToast.getTextOfLatestToast() == "Night Mode") { 
-            "Expected toast message 'Night Mode' but got '${ShadowToast.getTextOfLatestToast()}'" 
+        assert(ShadowToast.getTextOfLatestToast() == "Sleep Mode") {
+            "Expected toast message 'Sleep Mode' but got '${ShadowToast.getTextOfLatestToast()}'"
         }
     }
 
     @Test
-    fun longPress_showsDayModeToast_whenExitingNightMode() {
+    fun longPress_showsDayModeToast_whenExitingSleepMode() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("night_mode_brightness", 100).apply()
+        prefs.edit().putInt("sleep_mode_brightness", 100).apply()
 
-        // Enter night mode first
-        activity.toggleNightMode()
+        // Enter sleep mode first
+        activity.toggleSleepMode()
         ShadowToast.reset()
-        
-        // Exit night mode (back to day mode)
-        activity.toggleNightMode()
+
+        // Exit sleep mode (back to day mode)
+        activity.toggleSleepMode()
 
         val latestToast = ShadowToast.getLatestToast()
         assert(latestToast != null) { "Expected a toast to be shown" }
-        assert(ShadowToast.getTextOfLatestToast() == "Day Mode") { 
-            "Expected toast message 'Day Mode' but got '${ShadowToast.getTextOfLatestToast()}'" 
+        assert(ShadowToast.getTextOfLatestToast() == "Day Mode") {
+            "Expected toast message 'Day Mode' but got '${ShadowToast.getTextOfLatestToast()}'"
         }
     }
 
     @Test
-    fun longPress_enablesDoNotDisturb_whenEnteringNightMode() {
+    fun longPress_enablesDoNotDisturb_whenEnteringSleepMode() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("night_mode_brightness", 100).apply()
+        prefs.edit().putInt("sleep_mode_brightness", 100).apply()
 
         val notificationManager = activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        
+
         // Ensure DND is off initially
         notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
 
-        activity.toggleNightMode()
+        activity.toggleSleepMode()
 
         // Verify DND is enabled (alarms only - not all interruptions)
         assert(notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS) {
-            "Expected DND to be enabled when entering night mode"
+            "Expected DND to be enabled when entering sleep mode"
         }
     }
 
     @Test
-    fun longPress_disablesDoNotDisturb_whenExitingNightMode() {
+    fun longPress_disablesDoNotDisturb_whenExitingSleepMode() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("night_mode_brightness", 100).apply()
+        prefs.edit().putInt("sleep_mode_brightness", 100).apply()
 
         val notificationManager = activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        
-        // Ensure DND is off initially (not enabled by app before entering night mode)
+
+        // Ensure DND is off initially (not enabled by app before entering sleep mode)
         notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
 
-        // Enter night mode (enables DND)
-        activity.toggleNightMode()
-        
-        // Exit night mode (should disable DND since app enabled it)
-        activity.toggleNightMode()
+        // Enter sleep mode (enables DND)
+        activity.toggleSleepMode()
+
+        // Exit sleep mode (should disable DND since app enabled it)
+        activity.toggleSleepMode()
 
         // Verify DND is disabled (all - normal)
         assert(notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALL) {
-            "Expected DND to be disabled when exiting night mode"
+            "Expected DND to be disabled when exiting sleep mode"
         }
     }
 
     @Test
-    fun longPress_doesNotDisableDoNotDisturb_ifItWasAlreadyEnabled_beforeNightMode() {
+    fun longPress_doesNotDisableDoNotDisturb_ifItWasAlreadyEnabled_beforeSleepMode() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("night_mode_brightness", 100).apply()
+        prefs.edit().putInt("sleep_mode_brightness", 100).apply()
 
         val notificationManager = activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        
-        // Simulate user had DND already enabled (alarms only) before app enters night mode
+
+        // Simulate user had DND already enabled (alarms only) before app enters sleep mode
         notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS)
 
-        // Enter night mode (app will see DND is already not all)
-        activity.toggleNightMode()
-        
-        // Exit night mode (should NOT disable DND since it was already enabled by user)
-        activity.toggleNightMode()
+        // Enter sleep mode (app will see DND is already not all)
+        activity.toggleSleepMode()
+
+        // Exit sleep mode (should NOT disable DND since it was already enabled by user)
+        activity.toggleSleepMode()
 
         // Verify DND is still enabled (alarms only - user had it on, app should not turn it off)
         assert(notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS) {
-            "Expected DND to remain enabled when exiting night mode (it was already enabled before)"
+            "Expected DND to remain enabled when exiting sleep mode (it was already enabled before)"
         }
     }
 
     @Test
-    fun longPress_doesNotDisableDoNotDisturb_ifItWasTotalDnd_beforeNightMode() {
+    fun longPress_doesNotDisableDoNotDisturb_ifItWasTotalDnd_beforeSleepMode() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("night_mode_brightness", 100).apply()
+        prefs.edit().putInt("sleep_mode_brightness", 100).apply()
 
         val notificationManager = activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        
-        // Simulate user had total DND (none) before app enters night mode
+
+        // Simulate user had total DND (none) before app enters sleep mode
         notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
 
-        // Enter night mode (app will see DND is already none)
-        activity.toggleNightMode()
-        
-        // Exit night mode (should NOT disable DND since it was already enabled by user)
-        activity.toggleNightMode()
+        // Enter sleep mode (app will see DND is already none)
+        activity.toggleSleepMode()
+
+        // Exit sleep mode (should NOT disable DND since it was already enabled by user)
+        activity.toggleSleepMode()
 
         // Verify DND is still enabled (none - user had total DND, app should not turn it off)
         assert(notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_NONE) {
-            "Expected DND to remain enabled when exiting night mode (it was total DND before)"
+            "Expected DND to remain enabled when exiting sleep mode (it was total DND before)"
         }
     }
 
@@ -233,14 +233,14 @@ class FullscreenActivityTest {
     fun autoBrightness_doesNotRegisterListener_whenPrefIsFalse() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("auto_brightness", false).commit()
-        prefs.edit().putInt("night_mode_brightness", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
         val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
         shadowManager.addSensor(lightSensor)
 
-        activity.toggleNightMode()
+        activity.toggleSleepMode()
 
         assert(shadowManager.getListeners().isEmpty()) {
             "Expected no sensor listeners when auto-brightness is disabled"
@@ -248,42 +248,42 @@ class FullscreenActivityTest {
     }
 
     @Test
-    fun autoBrightness_registersListener_whenEnabledAndNightModeOn() {
+    fun autoBrightness_registersListener_whenEnabledAndSleepModeOn() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("auto_brightness", true).commit()
-        prefs.edit().putInt("night_mode_brightness", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
         val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
         shadowManager.addSensor(lightSensor)
 
-        activity.toggleNightMode()
+        activity.toggleSleepMode()
 
         assert(shadowManager.getListeners().isNotEmpty()) {
-            "Expected sensor listener to be registered when auto-brightness is enabled and night mode is on"
+            "Expected sensor listener to be registered when auto-brightness is enabled and sleep mode is on"
         }
     }
 
     @Test
-    fun autoBrightness_unregistersListener_whenNightModeExits() {
+    fun autoBrightness_unregistersListener_whenSleepModeExits() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("auto_brightness", true).commit()
-        prefs.edit().putInt("night_mode_brightness", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
         val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
         shadowManager.addSensor(lightSensor)
 
-        activity.toggleNightMode()
+        activity.toggleSleepMode()
         assert(shadowManager.getListeners().isNotEmpty()) {
-            "Expected listener to be registered after entering night mode"
+            "Expected listener to be registered after entering sleep mode"
         }
 
-        activity.toggleNightMode()
+        activity.toggleSleepMode()
         assert(shadowManager.getListeners().isEmpty()) {
-            "Expected sensor listener to be unregistered when night mode is exited"
+            "Expected sensor listener to be unregistered when sleep mode is exited"
         }
     }
 
@@ -291,14 +291,14 @@ class FullscreenActivityTest {
     fun autoBrightness_ignoresManualSetting_whenAutoIsOn() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("auto_brightness", true).commit()
-        prefs.edit().putInt("night_mode_brightness", 30).commit()
+        prefs.edit().putInt("sleep_mode_brightness", 30).commit()
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
         val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
         shadowManager.addSensor(lightSensor)
 
-        activity.toggleNightMode()
+        activity.toggleSleepMode()
 
         val event = SensorEventBuilder.newBuilder()
             .setSensor(lightSensor)
@@ -317,14 +317,14 @@ class FullscreenActivityTest {
     fun autoBrightness_scalesBrightnessBasedOnLux() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("auto_brightness", true).commit()
-        prefs.edit().putInt("night_mode_brightness", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
         val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
         shadowManager.addSensor(lightSensor)
 
-        activity.toggleNightMode()
+        activity.toggleSleepMode()
 
         // 0 lux → 0% equivalent → brightness 0
         val event0Lux = SensorEventBuilder.newBuilder()
@@ -370,14 +370,14 @@ class FullscreenActivityTest {
 
         val prefs = testActivity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("auto_brightness", true).commit()
-        prefs.edit().putInt("night_mode_brightness", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
 
         val sensorManager = testActivity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
         val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
         shadowManager.addSensor(lightSensor)
 
-        testActivity.toggleNightMode()
+        testActivity.toggleSleepMode()
         assert(shadowManager.getListeners().isNotEmpty()) {
             "Expected listener to be registered before pause"
         }

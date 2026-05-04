@@ -77,7 +77,7 @@ fun SettingsScreen(
     }
 
     var brightness by remember {
-        mutableFloatStateOf(sharedPreferences.getInt("night_mode_brightness", 0).toFloat())
+        mutableFloatStateOf(sharedPreferences.getInt("sleep_mode_brightness", 0).toFloat())
     }
 
     var autoBrightnessEnabled by remember {
@@ -147,13 +147,13 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             BrightnessSetting(
-                title = stringResource(R.string.night_mode_brightness_title),
+                title = stringResource(R.string.sleep_mode_brightness_title),
                 value = brightness,
                 enabled = !autoBrightnessEnabled,
                 onValueChange = {
                     brightness = it
                     sharedPreferences.edit()
-                        .putInt("night_mode_brightness", it.toInt())
+                        .putInt("sleep_mode_brightness", it.toInt())
                         .apply()
                 }
             )
