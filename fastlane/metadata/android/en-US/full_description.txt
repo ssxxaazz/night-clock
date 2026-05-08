@@ -4,14 +4,14 @@ A fullscreen, minimalist bedside clock for Android — designed for nighttime us
 - Large, rotated time display (view vertically when phone is on its side)
 - Sleep Mode: reduces brightness and enables Do Not Disturb (alarms only)
 - Configurable colors: Green, Red, Yellow, or Blue
-- AMOLED burn-in protection with oscillating text/background
+- AMOLED burn-in protection with an alternating checkerboard pixel mask
 - Adjustable sleep mode brightness (0-100%)
 - Always-on display
 - Auto-hiding system UI
 
 **Usage:**
 - Tap screen once to reveal settings icon (top-right)
-- Long-press to toggle day/sleep mode
+- Long-press to toggle awake/sleep mode
 - Upcoming alarm time displayed at top of screen
 
 Requires Android 15+ (API level 35).

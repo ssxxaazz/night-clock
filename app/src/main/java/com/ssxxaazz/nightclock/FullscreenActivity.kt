@@ -86,13 +86,17 @@ class FullscreenActivity : ComponentActivity() {
         val layout = window.attributes
         if (lowBrightness) {
             val autoBrightnessEnabled = sharedPreferences.getBoolean("auto_brightness", false)
+            val burnInProtectionEnabled = sharedPreferences.getBoolean("burn_in", false)
 
             if (autoBrightnessEnabled && hasLightSensor()) {
-                layout.screenBrightness = DEFAULT_AUTO_FACTOR * MAX_AUTO_BRIGHTNESS
+                layout.screenBrightness = compensateBrightnessForBurnInProtection(
+                    brightness = DEFAULT_AUTO_FACTOR * MAX_AUTO_BRIGHTNESS,
+                    burnInProtectionEnabled = burnInProtectionEnabled
+                )
                 startLightSensor()
             } else {
                 stopLightSensor()
-                layout.screenBrightness = computeBaseBrightness(sharedPreferences)
+                layout.screenBrightness = computeSleepModeBrightness(sharedPreferences)
             }
 
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
@@ -119,7 +123,7 @@ class FullscreenActivity : ComponentActivity() {
                         notificationManager.setInterruptionFilter(android.app.NotificationManager.INTERRUPTION_FILTER_ALL)
                     }
                 }
-                android.widget.Toast.makeText(applicationContext, "Day Mode", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(applicationContext, "Awake Mode", android.widget.Toast.LENGTH_SHORT).show()
                 wasInSleepMode = false
             }
         }
@@ -128,6 +132,13 @@ class FullscreenActivity : ComponentActivity() {
 
     private fun computeBaseBrightness(prefs: android.content.SharedPreferences): Float {
         return prefs.getInt("sleep_mode_brightness", 0) / 500f
+    }
+
+    private fun computeSleepModeBrightness(prefs: android.content.SharedPreferences): Float {
+        return compensateBrightnessForBurnInProtection(
+            brightness = computeBaseBrightness(prefs),
+            burnInProtectionEnabled = prefs.getBoolean("burn_in", false)
+        )
     }
 
     private fun hasLightSensor(): Boolean {
@@ -144,8 +155,12 @@ class FullscreenActivity : ComponentActivity() {
                 val lux = event.values[0]
                 val autoFactor = computeAutoFactor(lux)
                 runOnUiThread {
+                    val sharedPreferences = getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
                     val layout = window.attributes
-                    layout.screenBrightness = autoFactor * MAX_AUTO_BRIGHTNESS
+                    layout.screenBrightness = compensateBrightnessForBurnInProtection(
+                        brightness = autoFactor * MAX_AUTO_BRIGHTNESS,
+                        burnInProtectionEnabled = sharedPreferences.getBoolean("burn_in", false)
+                    )
                     window.attributes = layout
                 }
             }
@@ -183,6 +198,14 @@ class FullscreenActivity : ComponentActivity() {
             return (kotlin.math.ln((safeLux + 1f).toDouble()) / kotlin.math.ln(201.0))
                 .toFloat()
                 .coerceIn(0f, 1f)
+        }
+
+        fun compensateBrightnessForBurnInProtection(
+            brightness: Float,
+            burnInProtectionEnabled: Boolean
+        ): Float {
+            val compensationFactor = if (burnInProtectionEnabled) 2f else 1f
+            return (brightness * compensationFactor).coerceIn(0f, 1f)
         }
     }
 
