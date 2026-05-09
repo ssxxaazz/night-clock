@@ -1,8 +1,6 @@
 package com.ssxxaazz.nightclock.ui.screen
 
 import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorManager
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,8 +22,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -34,7 +32,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -76,17 +73,15 @@ fun SettingsScreen(
         mutableStateOf(sharedPreferences.getBoolean("burn_in", false))
     }
 
-    var brightness by remember {
-        mutableFloatStateOf(sharedPreferences.getInt("sleep_mode_brightness", 0).toFloat())
-    }
-
-    var autoBrightnessEnabled by remember {
-        mutableStateOf(sharedPreferences.getBoolean("auto_brightness", false))
-    }
-
-    val hasLightSensor = remember {
-        val sm = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        sm.getDefaultSensor(Sensor.TYPE_LIGHT) != null
+    var brightnessRange by remember {
+        val legacyBrightness = sharedPreferences.getInt("sleep_mode_brightness", 0).toFloat()
+        val minBrightness = sharedPreferences
+            .getInt("sleep_mode_brightness_min", legacyBrightness.toInt())
+            .toFloat()
+        val maxBrightness = sharedPreferences
+            .getInt("sleep_mode_brightness_max", legacyBrightness.toInt())
+            .toFloat()
+        mutableStateOf(minOf(minBrightness, maxBrightness)..maxOf(minBrightness, maxBrightness))
     }
 
     Scaffold(
@@ -148,31 +143,15 @@ fun SettingsScreen(
 
             BrightnessSetting(
                 title = stringResource(R.string.sleep_mode_brightness_title),
-                value = brightness,
-                enabled = !autoBrightnessEnabled,
+                valueRange = brightnessRange,
                 onValueChange = {
-                    brightness = it
+                    brightnessRange = it
                     sharedPreferences.edit()
-                        .putInt("sleep_mode_brightness", it.toInt())
+                        .putInt("sleep_mode_brightness_min", it.start.toInt())
+                        .putInt("sleep_mode_brightness_max", it.endInclusive.toInt())
                         .apply()
                 }
             )
-
-            if (hasLightSensor) {
-                Spacer(modifier = Modifier.height(24.dp))
-
-                SwitchSetting(
-                    title = stringResource(R.string.auto_brightness_title),
-                    checked = autoBrightnessEnabled,
-                    onCheckedChange = {
-                        autoBrightnessEnabled = it
-                        sharedPreferences.edit()
-                            .putBoolean("auto_brightness", it)
-                            .apply()
-                    },
-                    iconRes = R.drawable.ic_brightness_medium
-                )
-            }
         }
     }
 }
@@ -297,12 +276,9 @@ private fun SwitchSetting(
 @Composable
 private fun BrightnessSetting(
     title: String,
-    value: Float,
-    enabled: Boolean = true,
-    onValueChange: (Float) -> Unit
+    valueRange: ClosedFloatingPointRange<Float>,
+    onValueChange: (ClosedFloatingPointRange<Float>) -> Unit
 ) {
-    val textAlpha = if (enabled) 1f else 0.4f
-
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -310,13 +286,13 @@ private fun BrightnessSetting(
             Icon(
                 painter = painterResource(R.drawable.ic_brightness_medium),
                 contentDescription = null,
-                tint = White.copy(alpha = textAlpha)
+                tint = White
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = White.copy(alpha = textAlpha)
+                color = White
             )
         }
 
@@ -326,26 +302,23 @@ private fun BrightnessSetting(
                 .padding(start = 40.dp, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Slider(
-                value = value,
-                onValueChange = if (enabled) onValueChange else { _ -> },
+            RangeSlider(
+                value = valueRange,
+                onValueChange = onValueChange,
                 valueRange = 0f..100f,
+                steps = 19,
                 modifier = Modifier.weight(1f),
-                enabled = enabled,
                 colors = SliderDefaults.colors(
                     thumbColor = Green,
                     activeTrackColor = Green,
-                    inactiveTrackColor = Color.DarkGray,
-                    disabledThumbColor = Color.Gray,
-                    disabledActiveTrackColor = Color.Gray.copy(alpha = 0.5f),
-                    disabledInactiveTrackColor = Color.DarkGray.copy(alpha = 0.3f)
+                    inactiveTrackColor = Color.DarkGray
                 )
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "${value.toInt()}%",
+                text = "${valueRange.start.toInt()}%-${valueRange.endInclusive.toInt()}%",
                 style = MaterialTheme.typography.bodyMedium,
-                color = White.copy(alpha = textAlpha)
+                color = White
             )
         }
     }

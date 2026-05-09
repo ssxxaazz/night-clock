@@ -5,11 +5,10 @@ A fullscreen, minimalist bedside clock for Android — designed for nighttime us
 ## Features
 
 - **Large, Rotated Time Display** — Hours and minutes arranged vertically for easy viewing when your phone is on its side on a nightstand.
-- **Sleep Mode** — Long-press the screen to toggle. Reduces brightness and automatically enables Do Not Disturb (alarms only). Restores your previous DND setting when exiting.
+- **Sleep Mode** — Long-press the screen to toggle. Reduces brightness based on the ambient light sensor when available and automatically enables Do Not Disturb (alarms only). Restores your previous DND setting when exiting.
 - **Configurable Colors** — Choose from four preset colors: Green, Red, Yellow, or Blue.
 - **AMOLED Burn-In Protection** — Optional mode that alternates a checkerboard pixel mask to reduce sustained OLED pixel use.
-- **Brightness Control** — Adjustable sleep mode brightness slider (0–100%).
-- **Auto-Brightness** — Automatically adjusts sleep mode brightness based on the ambient light sensor (when available).
+- **Brightness Control** — Adjustable sleep mode brightness range slider (0–100%, in 5% increments). The range maps ambient light to a minimum and maximum sleep brightness; set both endpoints to the same value for fixed sleep brightness. 100% maps to 50% of Android's maximum screen brightness.
 - **Always-On Display** — Screen stays on and the clock shows on the lock screen.
 - **Auto-Hiding System UI** — Tap to reveal system bars; they auto-hide after 2 seconds.
 
@@ -75,12 +74,13 @@ app/src/main/java/com/ssxxaazz/nightclock/
 
 Settings are stored in `SharedPreferences`:
 
-| Preference             | Type    | Default      | Description                          |
-|------------------------|---------|--------------|--------------------------------------|
-| `text_color`           | String  | `#2AB32F`    | Clock text color (hex)               |
-| `burn_in`              | Boolean | `false`      | Enable AMOLED burn-in protection     |
-| `sleep_mode_brightness`| Integer | `0`          | Sleep mode brightness (0–100%)       |
-| `auto_brightness`      | Boolean | `false`      | Use ambient light sensor for brightness |
+| Preference                  | Type    | Default      | Description                                      |
+|-----------------------------|---------|--------------|--------------------------------------------------|
+| `text_color`                | String  | `#2AB32F`    | Clock text color (hex)                           |
+| `burn_in`                   | Boolean | `false`      | Enable AMOLED burn-in protection                 |
+| `sleep_mode_brightness_min` | Integer | legacy value | Minimum sleep mode brightness (0–100%)           |
+| `sleep_mode_brightness_max` | Integer | legacy value | Maximum sleep mode brightness (0–100%)           |
+| `sleep_mode_brightness`     | Integer | `0`          | Legacy fixed sleep brightness fallback (0–100%)  |
 
 ## License
 

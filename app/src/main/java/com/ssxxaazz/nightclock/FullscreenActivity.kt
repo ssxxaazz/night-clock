@@ -85,13 +85,10 @@ class FullscreenActivity : ComponentActivity() {
         val sharedPreferences = getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         val layout = window.attributes
         if (lowBrightness) {
-            val autoBrightnessEnabled = sharedPreferences.getBoolean("auto_brightness", false)
-            val burnInProtectionEnabled = sharedPreferences.getBoolean("burn_in", false)
-
-            if (autoBrightnessEnabled && hasLightSensor()) {
-                layout.screenBrightness = compensateBrightnessForBurnInProtection(
-                    brightness = DEFAULT_AUTO_FACTOR * MAX_AUTO_BRIGHTNESS,
-                    burnInProtectionEnabled = burnInProtectionEnabled
+            if (hasLightSensor()) {
+                layout.screenBrightness = computeAutoBrightness(
+                    prefs = sharedPreferences,
+                    autoFactor = DEFAULT_AUTO_FACTOR
                 )
                 startLightSensor()
             } else {
@@ -131,14 +128,14 @@ class FullscreenActivity : ComponentActivity() {
     }
 
     private fun computeBaseBrightness(prefs: android.content.SharedPreferences): Float {
-        return prefs.getInt("sleep_mode_brightness", 0) / 500f
+        return computeAutoBrightness(
+            prefs = prefs,
+            autoFactor = DEFAULT_AUTO_FACTOR
+        )
     }
 
     private fun computeSleepModeBrightness(prefs: android.content.SharedPreferences): Float {
-        return compensateBrightnessForBurnInProtection(
-            brightness = computeBaseBrightness(prefs),
-            burnInProtectionEnabled = prefs.getBoolean("burn_in", false)
-        )
+        return computeBaseBrightness(prefs)
     }
 
     private fun hasLightSensor(): Boolean {
@@ -157,9 +154,9 @@ class FullscreenActivity : ComponentActivity() {
                 runOnUiThread {
                     val sharedPreferences = getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
                     val layout = window.attributes
-                    layout.screenBrightness = compensateBrightnessForBurnInProtection(
-                        brightness = autoFactor * MAX_AUTO_BRIGHTNESS,
-                        burnInProtectionEnabled = sharedPreferences.getBoolean("burn_in", false)
+                    layout.screenBrightness = computeAutoBrightness(
+                        prefs = sharedPreferences,
+                        autoFactor = autoFactor
                     )
                     window.attributes = layout
                 }
@@ -186,9 +183,6 @@ class FullscreenActivity : ComponentActivity() {
         /** Initial auto factor applied before the first sensor reading arrives (mid-range). */
         private const val DEFAULT_AUTO_FACTOR = 0.5f
 
-        /** Maximum screen brightness when auto-brightness is at 100% (100/500 = 0.2). */
-        private const val MAX_AUTO_BRIGHTNESS = 0.2f
-
         /** Map ambient lux to a brightness scale factor in [0.0, 1.0].
          *  0 lux → 0% equivalent, 200 lux → 100% equivalent.
          *  Uses a natural-log mapping clamped at 200 lux.
@@ -200,12 +194,32 @@ class FullscreenActivity : ComponentActivity() {
                 .coerceIn(0f, 1f)
         }
 
-        fun compensateBrightnessForBurnInProtection(
-            brightness: Float,
-            burnInProtectionEnabled: Boolean
+        private fun computeAutoBrightness(
+            prefs: android.content.SharedPreferences,
+            autoFactor: Float
         ): Float {
-            val compensationFactor = if (burnInProtectionEnabled) 2f else 1f
-            return (brightness * compensationFactor).coerceIn(0f, 1f)
+            val legacyBrightness = prefs.getInt("sleep_mode_brightness", 0)
+            val minBrightness = prefs.getInt("sleep_mode_brightness_min", legacyBrightness)
+            val maxBrightness = prefs.getInt("sleep_mode_brightness_max", legacyBrightness)
+            return interpolateBrightness(
+                minBrightness = minBrightness,
+                maxBrightness = maxBrightness,
+                autoFactor = autoFactor
+            )
+        }
+
+        private fun interpolateBrightness(
+            minBrightness: Int,
+            maxBrightness: Int,
+            autoFactor: Float
+        ): Float {
+            val lowerBrightness = minOf(minBrightness, maxBrightness).coerceIn(0, 100)
+            val upperBrightness = maxOf(minBrightness, maxBrightness).coerceIn(0, 100)
+            val minBrightnessFraction = lowerBrightness / 200f
+            val maxBrightnessFraction = upperBrightness / 200f
+            val normalizedFactor = autoFactor.coerceIn(0f, 1f)
+            val brightnessRange = maxBrightnessFraction - minBrightnessFraction
+            return minBrightnessFraction + (brightnessRange * normalizedFactor)
         }
     }
 

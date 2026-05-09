@@ -5,5 +5,5 @@ Features:
 - Sleep mode with automatic Do Not Disturb
 - Four preset colors (Green, Red, Yellow, Blue)
 - AMOLED burn-in protection mode
-- Adjustable sleep mode brightness
+- Adjustable sleep mode brightness range with ambient light support
 - Settings for colors and burn-in protection

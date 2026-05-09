@@ -236,58 +236,38 @@ class FullscreenActivityTest {
     }
 
     @Test
-    fun sleepModeBrightness_doubles_whenBurnInProtectionIsEnabled() {
+    fun sleepModeBrightness_isNotChangedByBurnInProtection_whenBurnInProtectionIsEnabled() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("burn_in", true).commit()
-        prefs.edit().putBoolean("auto_brightness", false).commit()
         prefs.edit().putInt("sleep_mode_brightness", 100).commit()
 
         activity.toggleSleepMode()
 
         val brightness = activity.window.attributes.screenBrightness
-        assert(brightness == 0.4f) {
-            "Expected burn-in brightness compensation to double 0.2 to 0.4, got $brightness"
+        assert(brightness == 0.5f) {
+            "Expected brightness 0.5 regardless of burn-in protection, got $brightness"
         }
     }
 
     @Test
-    fun sleepModeBrightness_doesNotDouble_whenBurnInProtectionIsDisabled() {
+    fun sleepModeBrightness_mapsOneHundredPercentToHalfBrightness() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("burn_in", false).commit()
-        prefs.edit().putBoolean("auto_brightness", false).commit()
         prefs.edit().putInt("sleep_mode_brightness", 100).commit()
 
         activity.toggleSleepMode()
 
         val brightness = activity.window.attributes.screenBrightness
-        assert(brightness == 0.2f) {
-            "Expected brightness 0.2 without burn-in compensation, got $brightness"
+        assert(brightness == 0.5f) {
+            "Expected brightness 0.5 for 100% sleep brightness, got $brightness"
         }
     }
 
     @Test
-    fun autoBrightness_doesNotRegisterListener_whenPrefIsFalse() {
+    fun autoBrightness_registersListener_whenLightSensorIsAvailable() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("auto_brightness", false).commit()
-        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
-
-        val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
-        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
-        shadowManager.addSensor(lightSensor)
-
-        activity.toggleSleepMode()
-
-        assert(shadowManager.getListeners().isEmpty()) {
-            "Expected no sensor listeners when auto-brightness is disabled"
-        }
-    }
-
-    @Test
-    fun autoBrightness_registersListener_whenEnabledAndSleepModeOn() {
-        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("auto_brightness", true).commit()
-        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness_min", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness_max", 50).commit()
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
@@ -297,15 +277,31 @@ class FullscreenActivityTest {
         activity.toggleSleepMode()
 
         assert(shadowManager.getListeners().isNotEmpty()) {
-            "Expected sensor listener to be registered when auto-brightness is enabled and sleep mode is on"
+            "Expected sensor listener to be registered when a light sensor is available"
+        }
+    }
+
+    @Test
+    fun autoBrightness_doesNotRegisterListener_whenLightSensorIsUnavailable() {
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("sleep_mode_brightness_min", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness_max", 50).commit()
+
+        val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
+
+        activity.toggleSleepMode()
+
+        assert(shadowManager.getListeners().isEmpty()) {
+            "Expected no sensor listener when no light sensor is available"
         }
     }
 
     @Test
     fun autoBrightness_unregistersListener_whenSleepModeExits() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("auto_brightness", true).commit()
-        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness_min", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness_max", 50).commit()
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
@@ -324,10 +320,10 @@ class FullscreenActivityTest {
     }
 
     @Test
-    fun autoBrightness_ignoresManualSetting_whenAutoIsOn() {
+    fun autoBrightness_usesMaxRangeValue_atMaxLux() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("auto_brightness", true).commit()
-        prefs.edit().putInt("sleep_mode_brightness", 30).commit()
+        prefs.edit().putInt("sleep_mode_brightness_min", 30).commit()
+        prefs.edit().putInt("sleep_mode_brightness_max", 80).commit()
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
@@ -342,19 +338,19 @@ class FullscreenActivityTest {
             .build()
         shadowManager.sendSensorEventToListeners(event, lightSensor)
 
-        // 200 lux → 100% equivalent (0.2), manual setting of 30% must be ignored
+        // 200 lux → max range value (80/200 = 0.4)
         val brightness = activity.window.attributes.screenBrightness
-        assert(brightness == 0.2f) {
-            "Expected brightness 0.2 (100% equivalent) ignoring manual 30% setting. Got $brightness"
+        assert(brightness == 0.4f) {
+            "Expected brightness 0.4 from max range value. Got $brightness"
         }
     }
 
     @Test
-    fun autoBrightness_doubles_whenBurnInProtectionIsEnabled() {
+    fun autoBrightness_isNotChangedByBurnInProtection_whenBurnInProtectionIsEnabled() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("auto_brightness", true).commit()
         prefs.edit().putBoolean("burn_in", true).commit()
-        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness_min", 100).commit()
+        prefs.edit().putInt("sleep_mode_brightness_max", 100).commit()
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
@@ -370,16 +366,16 @@ class FullscreenActivityTest {
         shadowManager.sendSensorEventToListeners(event, lightSensor)
 
         val brightness = activity.window.attributes.screenBrightness
-        assert(brightness == 0.4f) {
-            "Expected auto brightness 0.2 to double to 0.4 with burn-in compensation. Got $brightness"
+        assert(brightness == 0.5f) {
+            "Expected ranged brightness 0.5 regardless of burn-in protection. Got $brightness"
         }
     }
 
     @Test
     fun autoBrightness_scalesBrightnessBasedOnLux() {
         val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("auto_brightness", true).commit()
-        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness_min", 20).commit()
+        prefs.edit().putInt("sleep_mode_brightness_max", 80).commit()
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
@@ -388,38 +384,38 @@ class FullscreenActivityTest {
 
         activity.toggleSleepMode()
 
-        // 0 lux → 0% equivalent → brightness 0
+        // 0 lux → min range value (20/200 = 0.1)
         val event0Lux = SensorEventBuilder.newBuilder()
             .setSensor(lightSensor)
             .setValues(floatArrayOf(0f))
             .build()
         shadowManager.sendSensorEventToListeners(event0Lux, lightSensor)
         val after0Lux = activity.window.attributes.screenBrightness
-        assert(after0Lux == 0f) {
-            "Expected brightness 0 at 0 lux (0% manual equivalent) but was $after0Lux"
+        assert(after0Lux == 0.1f) {
+            "Expected brightness 0.1 at 0 lux but was $after0Lux"
         }
 
-        // 10 lux: ln(11)/ln(201) ≈ 0.452 → brightness = 0.452 × 0.2 ≈ 0.0904
+        // 10 lux: ln(11)/ln(201) ≈ 0.452 → brightness = 0.1 + (0.4 - 0.1) × factor
         val event10Lux = SensorEventBuilder.newBuilder()
             .setSensor(lightSensor)
             .setValues(floatArrayOf(10f))
             .build()
         shadowManager.sendSensorEventToListeners(event10Lux, lightSensor)
         val after10Lux = activity.window.attributes.screenBrightness
-        val expected10Lux = 0.2f * (Math.log(11.0) / Math.log(201.0)).toFloat()
+        val expected10Lux = 0.1f + (0.3f * (Math.log(11.0) / Math.log(201.0)).toFloat())
         assert(Math.abs(after10Lux - expected10Lux) < 0.01f) {
             "Expected brightness ~$expected10Lux at 10 lux but was $after10Lux"
         }
 
-        // 200 lux → factor 1.0 → brightness = 0.2 (100% equivalent)
+        // 200 lux → max range value (80/200 = 0.4)
         val event200Lux = SensorEventBuilder.newBuilder()
             .setSensor(lightSensor)
             .setValues(floatArrayOf(200f))
             .build()
         shadowManager.sendSensorEventToListeners(event200Lux, lightSensor)
         val after200Lux = activity.window.attributes.screenBrightness
-        assert(after200Lux == 0.2f) {
-            "Expected brightness 0.2 at 200 lux (100% manual equivalent) but was $after200Lux"
+        assert(after200Lux == 0.4f) {
+            "Expected brightness 0.4 at 200 lux but was $after200Lux"
         }
     }
 
@@ -431,8 +427,8 @@ class FullscreenActivityTest {
         val testActivity = controller.get()
 
         val prefs = testActivity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("auto_brightness", true).commit()
-        prefs.edit().putInt("sleep_mode_brightness", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness_min", 50).commit()
+        prefs.edit().putInt("sleep_mode_brightness_max", 50).commit()
 
         val sensorManager = testActivity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
