@@ -2,9 +2,12 @@ package com.ssxxaazz.nightclock
 
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.os.BatteryManager
 import android.widget.Toast
+import java.util.concurrent.TimeUnit
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -14,7 +17,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.SensorEventBuilder
 import org.robolectric.shadows.ShadowNotificationManager
-import org.robolectric.shadows.ShadowSensor
+import org.robolectric.shadows.SensorBuilder
 import org.robolectric.shadows.ShadowSensorManager
 import org.robolectric.shadows.ShadowToast
 import org.robolectric.Shadows
@@ -271,7 +274,7 @@ class FullscreenActivityTest {
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
-        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        val lightSensor = SensorBuilder.newBuilder().setType(Sensor.TYPE_LIGHT).build()
         shadowManager.addSensor(lightSensor)
 
         activity.toggleSleepMode()
@@ -305,7 +308,7 @@ class FullscreenActivityTest {
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
-        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        val lightSensor = SensorBuilder.newBuilder().setType(Sensor.TYPE_LIGHT).build()
         shadowManager.addSensor(lightSensor)
 
         activity.toggleSleepMode()
@@ -327,14 +330,12 @@ class FullscreenActivityTest {
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
-        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        val lightSensor = SensorBuilder.newBuilder().setType(Sensor.TYPE_LIGHT).build()
         shadowManager.addSensor(lightSensor)
 
         activity.toggleSleepMode()
 
-        val event = SensorEventBuilder.newBuilder()
-            .setSensor(lightSensor)
-            .setValues(floatArrayOf(200f))
+        val event = SensorEventBuilder.newBuilder(lightSensor, floatArrayOf(200f))
             .build()
         shadowManager.sendSensorEventToListeners(event, lightSensor)
 
@@ -354,14 +355,12 @@ class FullscreenActivityTest {
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
-        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        val lightSensor = SensorBuilder.newBuilder().setType(Sensor.TYPE_LIGHT).build()
         shadowManager.addSensor(lightSensor)
 
         activity.toggleSleepMode()
 
-        val event = SensorEventBuilder.newBuilder()
-            .setSensor(lightSensor)
-            .setValues(floatArrayOf(200f))
+        val event = SensorEventBuilder.newBuilder(lightSensor, floatArrayOf(200f))
             .build()
         shadowManager.sendSensorEventToListeners(event, lightSensor)
 
@@ -379,15 +378,13 @@ class FullscreenActivityTest {
 
         val sensorManager = activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
-        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        val lightSensor = SensorBuilder.newBuilder().setType(Sensor.TYPE_LIGHT).build()
         shadowManager.addSensor(lightSensor)
 
         activity.toggleSleepMode()
 
         // 0 lux → min range value (20/200 = 0.1)
-        val event0Lux = SensorEventBuilder.newBuilder()
-            .setSensor(lightSensor)
-            .setValues(floatArrayOf(0f))
+        val event0Lux = SensorEventBuilder.newBuilder(lightSensor, floatArrayOf(0f))
             .build()
         shadowManager.sendSensorEventToListeners(event0Lux, lightSensor)
         val after0Lux = activity.window.attributes.screenBrightness
@@ -396,9 +393,7 @@ class FullscreenActivityTest {
         }
 
         // 10 lux: ln(11)/ln(201) ≈ 0.452 → brightness = 0.1 + (0.4 - 0.1) × factor
-        val event10Lux = SensorEventBuilder.newBuilder()
-            .setSensor(lightSensor)
-            .setValues(floatArrayOf(10f))
+        val event10Lux = SensorEventBuilder.newBuilder(lightSensor, floatArrayOf(10f))
             .build()
         shadowManager.sendSensorEventToListeners(event10Lux, lightSensor)
         val after10Lux = activity.window.attributes.screenBrightness
@@ -408,9 +403,7 @@ class FullscreenActivityTest {
         }
 
         // 200 lux → max range value (80/200 = 0.4)
-        val event200Lux = SensorEventBuilder.newBuilder()
-            .setSensor(lightSensor)
-            .setValues(floatArrayOf(200f))
+        val event200Lux = SensorEventBuilder.newBuilder(lightSensor, floatArrayOf(200f))
             .build()
         shadowManager.sendSensorEventToListeners(event200Lux, lightSensor)
         val after200Lux = activity.window.attributes.screenBrightness
@@ -432,7 +425,7 @@ class FullscreenActivityTest {
 
         val sensorManager = testActivity.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val shadowManager = Shadows.shadowOf(sensorManager) as ShadowSensorManager
-        val lightSensor = ShadowSensor.newInstance(Sensor.TYPE_LIGHT)
+        val lightSensor = SensorBuilder.newBuilder().setType(Sensor.TYPE_LIGHT).build()
         shadowManager.addSensor(lightSensor)
 
         testActivity.toggleSleepMode()
@@ -445,6 +438,55 @@ class FullscreenActivityTest {
         assert(shadowManager.getListeners().isEmpty()) {
             "Expected sensor listener to be unregistered on pause"
         }
+    }
+
+    private fun setPlugged(plugged: Boolean) {
+        val intent = Intent(Intent.ACTION_BATTERY_CHANGED)
+            .putExtra(BatteryManager.EXTRA_PLUGGED, if (plugged) BatteryManager.BATTERY_PLUGGED_USB else 0)
+        RuntimeEnvironment.getApplication().sendBroadcast(intent)
+        Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+    }
+
+    @Test
+    fun batterySleep_fixedBrightness_skipsSensor_andRestoresItWhenPluggedIn() {
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("sleep_mode_brightness_min", 50).putInt("sleep_mode_brightness_max", 50).commit()
+        val manager = Shadows.shadowOf(activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager)
+        manager.addSensor(SensorBuilder.newBuilder().setType(Sensor.TYPE_LIGHT).build())
+
+        setPlugged(false)
+        activity.toggleSleepMode()
+        assert(manager.getListeners().isEmpty())
+        assert(activity.window.attributes.screenBrightness == 0.25f)
+
+        setPlugged(true)
+        assert(manager.getListeners().isNotEmpty())
+        assert(activity.window.attributes.preferredRefreshRate == 0f)
+
+        setPlugged(false)
+        assert(manager.getListeners().isEmpty())
+        activity.toggleSleepMode()
+        assert(activity.window.attributes.preferredRefreshRate == 0f)
+    }
+
+    @Test
+    fun batterySleep_variableBrightness_throttlesSensorUpdates() {
+        val prefs = activity.getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("sleep_mode_brightness_min", 20).putInt("sleep_mode_brightness_max", 80).commit()
+        val manager = Shadows.shadowOf(activity.getSystemService(Context.SENSOR_SERVICE) as SensorManager)
+        val sensor = SensorBuilder.newBuilder().setType(Sensor.TYPE_LIGHT).build()
+        manager.addSensor(sensor)
+        setPlugged(false)
+        activity.toggleSleepMode()
+        assert(manager.getListeners().isNotEmpty())
+
+        manager.sendSensorEventToListeners(SensorEventBuilder.newBuilder(sensor, floatArrayOf(0f)).build(), sensor)
+        assert(activity.window.attributes.screenBrightness == 0.1f)
+        manager.sendSensorEventToListeners(SensorEventBuilder.newBuilder(sensor, floatArrayOf(200f)).build(), sensor)
+        assert(activity.window.attributes.screenBrightness == 0.1f)
+        Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(60, TimeUnit.SECONDS)
+        manager.sendSensorEventToListeners(SensorEventBuilder.newBuilder(sensor, floatArrayOf(200f)).build(), sensor)
+        assert(activity.window.attributes.screenBrightness == 0.4f)
     }
 
 }

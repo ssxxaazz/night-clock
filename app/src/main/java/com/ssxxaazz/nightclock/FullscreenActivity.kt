@@ -1,12 +1,15 @@
 package com.ssxxaazz.nightclock
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.res.Configuration
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.BatteryManager
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
@@ -36,21 +39,54 @@ class FullscreenActivity : ComponentActivity() {
     }
     private var lightSensorListener: SensorEventListener? = null
 
+    private var onBattery = false
+    private val batterySleep = mutableStateOf(false)
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val newOnBattery = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) == 0
+            if (onBattery != newOnBattery) {
+                onBattery = newOnBattery
+                updatePowerPolicy()
+            }
+        }
+    }
+
+    private fun updatePowerPolicy() {
+        batterySleep.value = lowBrightness && onBattery
+        val attributes = window.attributes
+        attributes.preferredRefreshRate = if (batterySleep.value) {
+            windowManager.defaultDisplay.supportedModes.minOfOrNull { it.refreshRate } ?: 0f
+        } else 0f
+        window.attributes = attributes
+        if (lowBrightness) {
+            stopLightSensor()
+            val prefs = getSharedPreferences("night_clock_prefs", Context.MODE_PRIVATE)
+            val legacy = prefs.getInt("sleep_mode_brightness", 0)
+            val fixed = prefs.getInt("sleep_mode_brightness_min", legacy) == prefs.getInt("sleep_mode_brightness_max", legacy)
+            if (!batterySleep.value || !fixed) startLightSensor()
+        }
+    }
+
     private val systemUiVisibleForClock = mutableStateOf(false)
 
     fun toggleSleepMode() {
         lowBrightness = !lowBrightness
         applyCustomBrightness()
+        updatePowerPolicy()
     }
 
     override fun onResume() {
         super.onResume()
         setupWindowFlags()
+        val batteryStatus = registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        onBattery = batteryStatus?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) == 0
         applyCustomBrightness()
+        updatePowerPolicy()
     }
 
     override fun onPause() {
         super.onPause()
+        unregisterReceiver(batteryReceiver)
         stopLightSensor()
         if (lowBrightness) {
             lowBrightness = false
@@ -66,6 +102,7 @@ class FullscreenActivity : ComponentActivity() {
             }
             wasInSleepMode = false
         }
+        updatePowerPolicy()
     }
 
     override fun onStop() {
@@ -147,8 +184,13 @@ class FullscreenActivity : ComponentActivity() {
         if (lightSensorListener != null) return
 
         lightSensorListener = object : SensorEventListener {
+            private var lastUpdateMillis = 0L
+
             override fun onSensorChanged(event: SensorEvent?) {
                 event ?: return
+                val now = android.os.SystemClock.elapsedRealtime()
+                if (batterySleep.value && lastUpdateMillis != 0L && now - lastUpdateMillis < 60_000L) return
+                lastUpdateMillis = now
                 val lux = event.values[0]
                 val autoFactor = computeAutoFactor(lux)
                 runOnUiThread {
@@ -168,7 +210,7 @@ class FullscreenActivity : ComponentActivity() {
         sensorManager.registerListener(
             lightSensorListener,
             lightSensor,
-            SensorManager.SENSOR_DELAY_NORMAL
+            if (batterySleep.value) 60_000_000 else SensorManager.SENSOR_DELAY_NORMAL
         )
     }
 
@@ -232,6 +274,7 @@ class FullscreenActivity : ComponentActivity() {
             NightClockTheme {
                 FullscreenClock(
                     systemUiVisible = systemUiVisibleForClock,
+                    batterySleep = batterySleep.value,
                     onSettingsClick = {
                         isCoveredByOtherActivity = true
                         val myIntent = Intent(this, SettingsActivity::class.java)

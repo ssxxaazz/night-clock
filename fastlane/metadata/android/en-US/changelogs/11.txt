@@ -1,0 +1,1 @@
+Reduce battery use in sleep mode by lowering the display refresh rate, updating the clock once per minute, and reducing light sensor updates when running on battery.

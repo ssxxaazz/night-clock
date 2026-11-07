@@ -11,8 +11,8 @@ android {
         applicationId = "com.ssxxaazz.nightclock"
         minSdk = 35
         targetSdk = 36
-        versionCode = 10
-        versionName = "1.7"
+        versionCode = 11
+        versionName = "1.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -27,6 +27,10 @@ android {
             )
         }
     }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
     buildFeatures {
         compose = true
     }
@@ -34,6 +38,11 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            all {
+                if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_24)) {
+                    it.jvmArgs("--enable-native-access=ALL-UNNAMED")
+                }
+            }
         }
     }
 }
@@ -63,8 +72,9 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
 }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
     }
 }

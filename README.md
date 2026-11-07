@@ -1,22 +1,38 @@
 # Night Clock
 
-A fullscreen, minimalist bedside clock for Android — designed for nighttime use with AMOLED-friendly burn-in protection, configurable colors, and automatic Do Not Disturb integration.
+A fullscreen, minimalist bedside clock for Android — designed for nighttime use
+with AMOLED-friendly burn-in protection, configurable colors, and automatic Do
+Not Disturb integration.
 
 ## Features
 
-- **Large, Rotated Time Display** — Hours and minutes arranged vertically for easy viewing when your phone is on its side on a nightstand.
-- **Sleep Mode** — Long-press the screen to toggle. Reduces brightness based on the ambient light sensor when available and automatically enables Do Not Disturb (alarms only). Restores your previous DND setting when exiting.
-- **Configurable Colors** — Choose from four preset colors: Green, Red, Yellow, or Blue.
-- **AMOLED Burn-In Protection** — Optional mode that alternates a checkerboard pixel mask to reduce sustained OLED pixel use.
-- **Brightness Control** — Adjustable sleep mode brightness range slider (0–100%, in 5% increments). The range maps ambient light to a minimum and maximum sleep brightness; set both endpoints to the same value for fixed sleep brightness. 100% maps to 50% of Android's maximum screen brightness.
-- **Always-On Display** — Screen stays on and the clock shows on the lock screen.
-- **Auto-Hiding System UI** — Tap to reveal system bars; they auto-hide after 2 seconds.
+- **Large, Rotated Time Display** — Hours and minutes arranged vertically for
+  easy viewing when your phone is on its side on a nightstand.
+- **Sleep Mode** — Long-press the screen to toggle. Reduces brightness based on
+  the ambient light sensor when available and automatically enables Do Not
+  Disturb (alarms only). Restores your previous DND setting when exiting.
+- **Configurable Colors** — Choose from four preset colors: Green, Red, Yellow,
+  or Blue.
+- **AMOLED Burn-In Protection** — Optional mode that alternates a checkerboard
+  pixel mask to reduce sustained OLED pixel use.
+- **Brightness Control** — Adjustable sleep mode brightness range slider
+  (0–100%, in 5% increments). The range maps ambient light to a minimum and
+  maximum sleep brightness; set both endpoints to the same value for fixed
+  sleep brightness. 100% maps to 50% of Android's maximum screen brightness.
+- **Always-On Display** — Screen stays on and the clock shows on the lock
+  screen.
+- **Auto-Hiding System UI** — Tap to reveal system bars; they auto-hide after 2
+  seconds.
 
 ## Usage
 
-- **Open Settings** — Tap the screen once to reveal the gear icon in the top-right corner, then tap the gear icon.
-- **Toggle Awake/Sleep Mode** — Tap the screen once (gear icon appears), then long-press anywhere on the screen. A toast notification confirms the mode switch.
-- **Upcoming Alarm** — The text at the top of the screen automatically displays the time of the next scheduled alarm or alert, if any.
+- **Open Settings** — Tap the screen once to reveal the gear icon in the
+  top-right corner, then tap the gear icon.
+- **Toggle Awake/Sleep Mode** — Tap the screen once (gear icon appears), then
+  long-press anywhere on the screen. A toast notification confirms the mode
+  switch.
+- **Upcoming Alarm** — The text at the top of the screen automatically displays
+  the time of the next scheduled alarm or alert, if any.
 
 ## Screenshots
 
@@ -28,8 +44,11 @@ A fullscreen, minimalist bedside clock for Android — designed for nighttime us
 ## Requirements
 
 - Android 15+ (API level 35)
-- JDK 21
-- Android SDK with API level 36 installed
+- JDK 28 early access (the build and tests have been verified with JDK 28 EA;
+  the app targets Java 21 bytecode)
+- Android SDK with API level 36 installed and `ANDROID_HOME` or
+  `local.properties` configured to point to the SDK
+- The Gradle wrapper downloads Gradle 9.6.0 on first use
 
 ## Build
 
@@ -48,12 +67,14 @@ A fullscreen, minimalist bedside clock for Android — designed for nighttime us
 | Component           | Version / Details                    |
 |---------------------|--------------------------------------|
 | Language            | Kotlin                               |
-| UI Framework        | Jetpack Compose (BOM 2024.09.00)    |
+| Build tools         | Android Gradle Plugin 9.5.1, Gradle 9.6.0 |
+| Kotlin version      | 2.2.10                               |
+| UI Framework        | Jetpack Compose (BOM 2024.09.00)     |
 | Design System       | Material 3                           |
 | Min SDK             | 35 (Android 15)                      |
 | Target SDK          | 36                                   |
 | Coroutines          | 1.7.3                                |
-| Testing             | Robolectric 4.14                     |
+| Testing             | Robolectric 4.17                     |
 
 ## Project Structure
 

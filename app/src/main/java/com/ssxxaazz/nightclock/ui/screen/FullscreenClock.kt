@@ -68,6 +68,7 @@ private val Black = ComposeColor.Black
 fun FullscreenClock(
     systemUiVisible: MutableState<Boolean>,
     onSettingsClick: () -> Unit,
+    batterySleep: Boolean = false,
     onSystemUiShow: () -> Unit = {},
     onSystemUiAutoHide: () -> Unit = {},
     onLongPress: () -> Unit = {},
@@ -97,7 +98,7 @@ fun FullscreenClock(
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(batterySleep) {
         while (true) {
             val cal = Calendar.getInstance()
             hours = String.format(Locale.US, "%02d", cal.get(Calendar.HOUR_OF_DAY))
@@ -127,7 +128,7 @@ fun FullscreenClock(
                 SwatchColors.Green
             }
 
-            delay(1000)
+            delay(if (batterySleep) 60_000L - System.currentTimeMillis() % 60_000L else 1000L)
         }
     }
 
@@ -237,10 +238,12 @@ fun FullscreenClock(
                 Spacer(modifier = Modifier.height(15.dp))
 
                 // Seconds line between hours and minutes - spanning full width
-                SecondsLine(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = textColor
-                )
+                if (!batterySleep) {
+                    SecondsLine(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = textColor
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(5.dp))
 
